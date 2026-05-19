@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InjectOut — INJ Off-Ramp</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050508;
+    --surface: #0a0a10;
+    --surface2: #0f0f18;
+    --border: rgba(0, 195, 255, 0.12);
+    --border-bright: rgba(0, 195, 255, 0.35);
+    --blue: #00c3ff;
+    --blue-dim: rgba(0, 195, 255, 0.08);
+    --blue-glow: rgba(0, 195, 255, 0.25);
+    --text: #f0f4ff;
+    --muted: #5a6080;
+    --muted2: #8890aa;
+    --success: #00e5a0;
+    --warning: #ffb800;
+    --error: #ff4d6a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,195,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,195,255,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orb */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(0,195,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
+    height: 64px;
+    background: rgba(5,5,8,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--blue);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo span { color: var(--blue); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted2);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover, .nav-links a.active { color: var(--blue); }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-connect {
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--blue);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-connect:hover {
+    background: var(--blue-dim);
+    border-color: var(--blue);
+    box-shadow: 0 0 20px var(--blue-glow);
+  }
+
+  /* MAIN */
+  main {
+    position: relative;
+    z-index: 1;
+    padding-top: 64px;
+    min-height: 100vh;
+  }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* LANDING PAGE */
+  #page-landing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 120px 24px 80px;
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--border-bright);
+    background: var(--blue-dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: var(--blue);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  h1 {
+    font-size: clamp(48px, 8vw, 88px);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+
+  h1 .highlight {
+    color: var(--blue);
+    position: relative;
+  }
+
+  .subtitle {
+    font-size: 18px;
+    color: var(--muted2);
+    max-width: 480px;
+    line-height: 1.6;
+    margin-bottom: 48px;
+    font-weight: 400;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 80px;
+  }
+
+  .btn-primary {
+    padding: 14px 32px;
+    background: var(--blue);
+    color: #050508;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    background: #fff;
+    box-shadow: 0 0 40px var(--blue-glow);
+  }
+
+  .btn-secondary {
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--border-bright);
+    color: var(--blue);
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    width: 100%;
+    max-width: 680px;
+  }
+
+  .stat {
+    flex: 1;
+    padding: 20px 24px;
+    border-right: 1px solid var(--border);
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-value.green { color: var(--success); }
+
+  /* TRADE PAGE */
+  #page-trade {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* Left panel - form */
+  .trade-form-panel {
+    padding: 60px 48px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .panel-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .panel-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--blue);
+  }
+
+  .panel-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .rate-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  .rate-icon {
+    width: 32px; height: 32px;
+    background: var(--blue-dim);
+    border: 1px solid var(--border-bright);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .rate-info { flex: 1; }
+
+  .rate-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .rate-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  .rate-refresh {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* Form fields */
+  .field { display: flex; flex-direction: column; gap: 8px; }
+
+  .field-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-wrap input, .input-wrap select {
+    width: 100%;
+    padding: 14px 60px 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+
+  .input-wrap input:focus, .input-wrap select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 1px rgba(0,195,255,0.2);
+  }
+
+  .input-wrap input::placeholder { color: var(--muted); font-size: 18px; }
+
+  .input-tag {
+    position: absolute;
+    right: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted2);
+    letter-spacing: 0.08em;
+    pointer-events: none;
+  }
+
+  .input-wrap.bank { flex-direction: column; align-items: stretch; }
+  .input-wrap.bank select { padding: 14px 16px; font-size: 14px; }
+
+  .receive-box {
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(0,195,255,0.05), rgba(0,229,160,0.05));
+    border: 1px solid rgba(0,195,255,0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .receive-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .receive-amount {
+    font-family: 'Space Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  .receive-fee {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .btn-full {
+    width: 100%;
+    padding: 18px;
+    background: var(--blue);
+    color: #050508;
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-full::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s;
+  }
+
+  .btn-full:hover::after { transform: translateX(100%); }
+  .btn-full:hover { background: #fff; box-shadow: 0 0 40px var(--blue-glow); }
+
+  .disclaimer {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    padding: 12px 16px;
+    border-left: 2px solid var(--border-bright);
+  }
+
+  /* Right panel - info */
+  .trade-info-panel {
+    padding: 60px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .how-it-works { display: flex; flex-direction: column; gap: 20px; }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    opacity: 0;
+    animation: fadeUp 0.5s forwards;
+  }
+
+  .step:nth-child(1) { animation-delay: 0.1s; }
+  .step:nth-child(2) { animation-delay: 0.2s; }
+  .step:nth-child(3) { animation-delay: 0.3s; }
+  .step:nth-child(4) { animation-delay: 0.4s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-num {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border-bright);
+    background: var(--blue-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--blue);
+    flex-shrink: 0;
+  }
+
+  .step-content { flex: 1; }
+
+  .step-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--muted2);
+    line-height: 1.5;
+  }
+
+  .step-connector {
+    width: 1px;
+    height: 20px;
+    background: var(--border-bright);
+    margin-left: 15px;
+  }
+
+  /* Feature cards */
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .feature {
+    padding: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .feature:hover { border-color: var(--border-bright); }
+
+  .feature-icon { font-size: 20px; margin-bottom: 10px; }
+
+  .feature-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .feature-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+
+  /* SEND PAGE */
+  #page-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+    padding: 60px 24px;
+  }
+
+  .send-card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .send-card-header {
+    padding: 28px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .send-card-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .timer-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(255,184,0,0.08);
+    border: 1px solid rgba(255,184,0,0.3);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--warning);
+  }
+
+  .timer-dot {
+    width: 6px; height: 6px;
+    background: var(--warning);
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+  }
+
+  .send-card-body { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+
+  .address-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+
+  .address-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .address-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--blue);
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  .copy-btn {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted2);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    width: fit-content;
+  }
+
+  .copy-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  .exact-amount {
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(0,195,255,0.06), transparent);
+    border: 1px solid var(--border-bright);
+    text-align: center;
+  }
+
+  .exact-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .exact-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  .exact-sub {
+    font-size: 13px;
+    color: var(--muted2);
+    margin-top: 4px;
+  }
+
+  .status-waiting {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(0,195,255,0.04);
+    border: 1px solid var(--border);
+  }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted2);
+  }
+
+  /* PROCESSING PAGE */
+  #page-processing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+    padding: 60px 24px;
+  }
+
+  .processing-card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 48px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .processing-ring {
+    width: 80px; height: 80px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ring-outer {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+  }
+
+  .ring-inner {
+    position: absolute;
+    inset: 12px;
+    border: 2px solid transparent;
+    border-top-color: rgba(0,195,255,0.3);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite reverse;
+  }
+
+  .ring-center {
+    width: 28px; height: 28px;
+    background: var(--blue-dim);
+    border: 1px solid var(--border-bright);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+
+  .processing-title {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .processing-steps { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+
+  .proc-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+
+  .proc-step.done { border-color: rgba(0,229,160,0.3); }
+  .proc-step.active { border-color: var(--border-bright); }
+
+  .proc-icon {
+    width: 24px; height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .proc-step.done .proc-icon { color: var(--success); }
+  .proc-step.active .proc-icon { color: var(--blue); }
+  .proc-step .proc-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted2);
+  }
+  .proc-step.done .proc-label { color: var(--success); }
+  .proc-step.active .proc-label { color: var(--text); }
+
+  /* DONE PAGE */
+  #page-done {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+    padding: 60px 24px;
+  }
+
+  .done-card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    border: 1px solid rgba(0,229,160,0.3);
+    padding: 48px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .done-icon {
+    width: 72px; height: 72px;
+    background: rgba(0,229,160,0.08);
+    border: 1px solid rgba(0,229,160,0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+
+  .done-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  .done-amount {
+    font-family: 'Space Mono', monospace;
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .done-sub { font-size: 14px; color: var(--muted2); }
+
+  .done-receipts { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  .receipt-key {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .receipt-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  .receipt-val.link { color: var(--blue); cursor: pointer; }
+  .receipt-val.link:hover { text-decoration: underline; }
+
+  /* Ticker tape */
+  .ticker {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 36px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    z-index: 50;
+  }
+
+  .ticker-inner {
+    display: flex;
+    gap: 64px;
+    animation: ticker 30s linear infinite;
+    white-space: nowrap;
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .ticker-item .up { color: var(--success); }
+  .ticker-item .down { color: var(--error); }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    #page-trade { grid-template-columns: 1fr; }
+    .trade-info-panel { display: none; }
+    .trade-form-panel { padding: 32px 20px; }
+    h1 { font-size: 42px; }
+    .stats-bar { flex-direction: column; }
+    .stat { border-right: none; border-bottom: 1px solid var(--border); }
+    .stat:last-child { border-bottom: none; }
+    .features { grid-template-columns: 1fr; }
+    .send-card-body { padding: 20px; }
+    .processing-card, .done-card { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-icon"></div>
+    Inject<span>Out</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#" class="active" onclick="showPage('landing')">Home</a></li>
+    <li><a href="#" onclick="showPage('trade')">Sell INJ</a></li>
+    <li><a href="#">History</a></li>
+    <li><a href="#">Docs</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-connect" onclick="showPage('trade')">Connect Wallet</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- LANDING PAGE -->
+  <div id="page-landing" class="page active">
+    <div class="badge"><span class="badge-dot"></span> Live on Injective Mainnet</div>
+    <h1>Sell <span class="highlight">INJ</span>.<br>Receive Naira<br>Instantly.</h1>
+    <p class="subtitle">The first automated off-ramp on Injective. No manual confirmation, no counterparty, no waiting.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="showPage('trade')">Start Selling →</button>
+      <button class="btn-secondary">View Docs</button>
+    </div>
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-label">INJ / NGN Rate</div>
+        <div class="stat-value green" id="live-rate">₦2,841</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Avg. Settlement</div>
+        <div class="stat-value">~18s</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total Volume</div>
+        <div class="stat-value">₦48.2M</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Trades Today</div>
+        <div class="stat-value">1,204</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRADE PAGE -->
+  <div id="page-trade" class="page">
+    <div class="trade-form-panel">
+      <div class="panel-header">
+        <div class="panel-tag">// Initiate Trade</div>
+        <div class="panel-title">Sell your INJ</div>
+      </div>
+
+      <div class="rate-display">
+        <div class="rate-icon">⚡</div>
+        <div class="rate-info">
+          <div class="rate-label">Current Rate</div>
+          <div class="rate-value">1 INJ = ₦<span id="rate-val">2,841.00</span></div>
+        </div>
+        <div class="rate-refresh" id="refresh-countdown">Refreshes in 30s</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">You Send</div>
+        <div class="input-wrap">
+          <input type="number" id="inj-amount" placeholder="0.00" oninput="calcReceive()" min="0.01" step="0.01">
+          <span class="input-tag">INJ</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Bank Name</div>
+        <div class="input-wrap bank">
+          <select id="bank-name">
+            <option value="">Select your bank</option>
+            <option>Access Bank</option>
+            <option>GTBank</option>
+            <option>First Bank</option>
+            <option>Zenith Bank</option>
+            <option>UBA</option>
+            <option>OPay</option>
+            <option>Palmpay</option>
+            <option>Kuda</option>
+            <option>Moniepoint</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Account Number</div>
+        <div class="input-wrap">
+          <input type="text" id="acct-num" placeholder="0000000000" maxlength="10">
+        </div>
+      </div>
+
+      <div class="receive-box">
+        <div>
+          <div class="receive-label">You Receive</div>
+          <div class="receive-amount" id="receive-amount">₦0.00</div>
+          <div class="receive-fee" id="fee-display">Fee: ₦0.00 (1%)</div>
+        </div>
+        <div style="text-align:right">
+          <div class="receive-label">Rate locked for</div>
+          <div style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--warning)">2:00</div>
+        </div>
+      </div>
+
+      <button class="btn-full" onclick="confirmTrade()">Confirm Trade →</button>
+
+      <div class="disclaimer">
+        Rate is locked for 2 minutes once confirmed. INJ is sent to our escrow address. Naira is disbursed automatically upon on-chain confirmation.
+      </div>
+    </div>
+
+    <div class="trade-info-panel">
+      <div>
+        <div class="panel-tag" style="margin-bottom:16px">// How It Works</div>
+        <div class="how-it-works">
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-content">
+              <div class="step-title">Enter amount & bank details</div>
+              <div class="step-desc">Tell us how much INJ you want to sell and where to send your naira.</div>
+            </div>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-content">
+              <div class="step-title">Send INJ to escrow</div>
+              <div class="step-desc">Transfer the exact INJ amount to our on-chain escrow address within 2 minutes.</div>
+            </div>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-content">
+              <div class="step-title">On-chain detection</div>
+              <div class="step-desc">Our oracle detects your deposit on Injective mainnet within seconds of block finality.</div>
+            </div>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-content">
+              <div class="step-title">Naira hits your account</div>
+              <div class="step-desc">Paystack automatically sends naira to your bank. Average: 18 seconds. No human involved.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-tag" style="margin-bottom:16px">// Why InjectOut</div>
+        <div class="features">
+          <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-title">Instant Settlement</div>
+            <div class="feature-desc">Automated oracle. No manual approval. Average 18 seconds.</div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🔒</div>
+            <div class="feature-title">Non-Custodial</div>
+            <div class="feature-desc">Escrow is on-chain. Funds auto-release or refund.</div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">📊</div>
+            <div class="feature-title">Live Rates</div>
+            <div class="feature-desc">INJ/NGN rate refreshed every 30 seconds from market.</div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🛡️</div>
+            <div class="feature-title">Auto Refund</div>
+            <div class="feature-desc">If disbursement fails, INJ is returned to your wallet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEND PAGE -->
+  <div id="page-send" class="page">
+    <div class="send-card">
+      <div class="send-card-header">
+        <div class="send-card-title">Send INJ</div>
+        <div class="timer-pill">
+          <div class="timer-dot"></div>
+          <span id="countdown-timer">01:59</span>
+        </div>
+      </div>
+      <div class="send-card-body">
+        <div class="exact-amount">
+          <div class="exact-label">Send Exactly</div>
+          <div class="exact-value" id="send-amount-display">0.00 INJ</div>
+          <div class="exact-sub">Do not send a different amount</div>
+        </div>
+
+        <div class="address-box">
+          <div class="address-label">To This Address</div>
+          <div class="address-value" id="escrow-address">inj1xyzabc...def789</div>
+          <button class="copy-btn" onclick="copyAddress()">
+            📋 Copy Address
+          </button>
+        </div>
+
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Or scan QR</div>
+          <div style="width:100px;height:100px;margin:0 auto;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;">QR CODE</div>
+        </div>
+
+        <div class="status-waiting">
+          <div class="spinner"></div>
+          <div class="status-text">Waiting for deposit on Injective mainnet...</div>
+        </div>
+
+        <button class="btn-full" onclick="simulateProcessing()" style="background:var(--surface2);color:var(--muted2);border:1px solid var(--border);">
+          [DEV] Simulate Deposit →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCESSING PAGE -->
+  <div id="page-processing" class="page">
+    <div class="processing-card">
+      <div class="processing-ring">
+        <div class="ring-outer"></div>
+        <div class="ring-inner"></div>
+        <div class="ring-center"></div>
+      </div>
+      <div class="processing-title">Processing Your Trade</div>
+      <p style="font-size:14px;color:var(--muted2)">Hang tight. This usually takes under 30 seconds.</p>
+
+      <div class="processing-steps">
+        <div class="proc-step done">
+          <div class="proc-icon">✓</div>
+          <div class="proc-label">INJ deposit detected on-chain</div>
+        </div>
+        <div class="proc-step done">
+          <div class="proc-icon">✓</div>
+          <div class="proc-label">Block finality confirmed</div>
+        </div>
+        <div class="proc-step active">
+          <div class="proc-icon"><div class="spinner" style="width:16px;height:16px;border-width:2px;"></div></div>
+          <div class="proc-label">Initiating Paystack bank transfer...</div>
+        </div>
+        <div class="proc-step">
+          <div class="proc-icon" style="color:var(--muted);">○</div>
+          <div class="proc-label" style="color:var(--muted);">Naira sent to your account</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DONE PAGE -->
+  <div id="page-done" class="page">
+    <div class="done-card">
+      <div class="done-icon">✓</div>
+      <div class="done-title">Transfer Complete</div>
+      <div class="done-amount" id="done-amount">₦0</div>
+      <div class="done-sub" id="done-bank">Sent to GTBank •••1234</div>
+
+      <div class="done-receipts">
+        <div class="receipt-row">
+          <span class="receipt-key">INJ Sold</span>
+          <span class="receipt-val" id="done-inj">— INJ</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Rate Used</span>
+          <span class="receipt-val">₦2,841 / INJ</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Fee</span>
+          <span class="receipt-val" id="done-fee">—</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Tx Hash</span>
+          <span class="receipt-val link">0xA3f...9e21 ↗</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Paystack Ref</span>
+          <span class="receipt-val">PSK-20260519-9921</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-key">Settlement Time</span>
+          <span class="receipt-val" style="color:var(--success)">18 seconds</span>
+        </div>
+      </div>
+
+      <button class="btn-full" onclick="resetTrade()">Sell More INJ →</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- TICKER TAPE -->
+<div class="ticker">
+  <div class="ticker-inner" id="ticker-inner"></div>
+</div>
+
+<script>
+  const RATE = 2841;
+  const FEE_PCT = 0.01;
+
+  let tradeData = { injAmount: 0, bank: '', acct: '' };
+  let timerInterval = null;
+  let refreshInterval = null;
+  let refreshCount = 30;
+
+  function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    });
+    const el = document.getElementById('page-' + page);
+    el.style.display = (page === 'trade') ? 'grid' :
+                       (page === 'landing') ? 'flex' : 'flex';
+    setTimeout(() => el.classList.add('active'), 10);
+
+    // update nav
+    document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  }
+
+  function calcReceive() {
+    const inj = parseFloat(document.getElementById('inj-amount').value) || 0;
+    const gross = inj * RATE;
+    const fee = gross * FEE_PCT;
+    const net = gross - fee;
+    document.getElementById('receive-amount').textContent = '₦' + net.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('fee-display').textContent = `Fee: ₦${fee.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (1%)`;
+  }
+
+  function confirmTrade() {
+    const inj = parseFloat(document.getElementById('inj-amount').value);
+    const bank = document.getElementById('bank-name').value;
+    const acct = document.getElementById('acct-num').value;
+
+    if (!inj || inj <= 0) { alert('Enter a valid INJ amount'); return; }
+    if (!bank) { alert('Select your bank'); return; }
+    if (!acct || acct.length !== 10) { alert('Enter a valid 10-digit account number'); return; }
+
+    tradeData = { injAmount: inj, bank, acct };
+
+    document.getElementById('send-amount-display').textContent = inj.toFixed(4) + ' INJ';
+    document.getElementById('escrow-address').textContent = 'inj1qxf0z8m3d9kp5v2n7w4j1r6e8a0c3g5h2b9';
+
+    // Populate done page
+    const gross = inj * RATE;
+    const fee = gross * FEE_PCT;
+    const net = gross - fee;
+    document.getElementById('done-amount').textContent = '₦' + net.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('done-inj').textContent = inj.toFixed(4) + ' INJ';
+    document.getElementById('done-fee').textContent = '₦' + fee.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('done-bank').textContent = `Sent to ${bank} •••${acct.slice(-4)}`;
+
+    showPage('send');
+    startCountdown(120);
+  }
+
+  function startCountdown(seconds) {
+    clearInterval(timerInterval);
+    let remaining = seconds;
+    function update() {
+      const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+      const s = String(remaining % 60).padStart(2, '0');
+      document.getElementById('countdown-timer').textContent = m + ':' + s;
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        alert('Timer expired. Please start a new trade.');
+        resetTrade();
+      }
+      remaining--;
+    }
+    update();
+    timerInterval = setInterval(update, 1000);
+  }
+
+  function simulateProcessing() {
+    clearInterval(timerInterval);
+    showPage('processing');
+    setTimeout(() => showPage('done'), 3500);
+  }
+
+  function copyAddress() {
+    const addr = document.getElementById('escrow-address').textContent;
+    navigator.clipboard.writeText(addr).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '✓ Copied!';
+      btn.style.color = 'var(--success)';
+      btn.style.borderColor = 'rgba(0,229,160,0.5)';
+      setTimeout(() => {
+        btn.textContent = '📋 Copy Address';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    });
+  }
+
+  function resetTrade() {
+    clearInterval(timerInterval);
+    document.getElementById('inj-amount').value = '';
+    document.getElementById('bank-name').value = '';
+    document.getElementById('acct-num').value = '';
+    calcReceive();
+    showPage('trade');
+  }
+
+  // Ticker
+  const tickerData = [
+    { label: 'INJ/NGN', value: '₦2,841', change: '+2.4%', up: true },
+    { label: 'INJ/USDT', value: '$1.84', change: '+2.1%', up: true },
+    { label: 'INJ/BTC', value: '0.0000198', change: '-0.3%', up: false },
+    { label: 'Total Volume 24h', value: '₦48.2M', change: '', up: true },
+    { label: 'Trades Today', value: '1,204', change: '', up: true },
+    { label: 'Avg Settlement', value: '18s', change: '', up: true },
+    { label: 'INJ Market Cap', value: '$284M', change: '+1.9%', up: true },
+    { label: 'Gas Fee', value: '~0.001 INJ', change: '', up: true },
+  ];
+
+  function buildTicker() {
+    const items = [...tickerData, ...tickerData]; // duplicate for seamless loop
+    const html = items.map(t =>
+      `<div class="ticker-item">
+        <span style="color:var(--muted2)">${t.label}</span>
+        <span style="color:var(--text);font-weight:700">${t.value}</span>
+        ${t.change ? `<span class="${t.up ? 'up' : 'down'}">${t.change}</span>` : ''}
+      </div>`
+    ).join('');
+    document.getElementById('ticker-inner').innerHTML = html;
+  }
+
+  // Rate refresh countdown
+  function startRateRefresh() {
+    refreshInterval = setInterval(() => {
+      refreshCount--;
+      document.getElementById('refresh-countdown').textContent = `Refreshes in ${refreshCount}s`;
+      if (refreshCount <= 0) {
+        refreshCount = 30;
+        // Simulate slight rate fluctuation
+        const fluctuation = (Math.random() - 0.5) * 20;
+        const newRate = (RATE + fluctuation).toFixed(2);
+        document.getElementById('rate-val').textContent = parseFloat(newRate).toLocaleString('en-NG', {minimumFractionDigits: 2});
+        document.getElementById('live-rate').textContent = '₦' + Math.round(RATE + fluctuation).toLocaleString('en-NG');
+        calcReceive();
+      }
+    }, 1000);
+  }
+
+  // Init
+  buildTicker();
+  startRateRefresh();
+
+  // Fix initial page display
+  document.getElementById('page-landing').style.display = 'flex';
+</script>
+</body>
+</html>
